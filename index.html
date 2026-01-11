@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onze Date Ideeën</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="max-w-2xl mx-auto p-6">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-pink-600">💖 Date Planner</h1>
+            <p class="text-gray-600">Verzamel hier onze leukste uitjes</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-xl shadow-md mb-10">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Nieuw Idee Toevoegen</h2>
+            <div class="space-y-4">
+                <input type="text" id="title" placeholder="Wat gaan we doen?" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-400 outline-none">
+                <input type="text" id="link" placeholder="Link (bijv. Google Maps of website)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-400 outline-none">
+                <textarea id="description" placeholder="Extra info (wat nemen we mee?)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-400 outline-none"></textarea>
+                <button onclick="saveDate()" id="submitBtn" class="w-full bg-pink-500 text-white font-bold py-3 rounded-lg hover:bg-pink-600 transition">Toevoegen ✨</button>
+            </div>
+        </div>
+
+        <div id="datesContainer" class="space-y-4">
+            <p class="text-center text-gray-400">Ideeën aan het laden...</p>
+        </div>
+    </div>
+
+    <script>
+        // VERVANG DEZE DOOR JOUW EIGEN GEGEVENS UIT SUPABASE
+        const SUPABASE_URL = 'https://jwlysukkajzgxbjymzxt.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3bHlzdWtrYWp6Z3hianltenh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxNTE5NzIsImV4cCI6MjA4MzcyNzk3Mn0.LvNzHeX5nPEE4NCKrERllnVs8jUxre48l8pXmPBTGnM';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Functie: Gegevens ophalen
+        async function fetchDates() {
+            const { data, error } = await supabaseClient
+                .from('DatingDB')
+                .select('*')
+                .order('id', { ascending: false });
+
+            const container = document.getElementById('datesContainer');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">Nog geen ideeën. Voeg er een toe!</p>';
+                return;
+            }
+
+            data.forEach(date => {
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-pink-500">
+                        <h3 class="font-bold text-lg text-gray-800">${date.title}</h3>
+                        <p class="text-gray-600 text-sm mt-1">${date.description || 'Geen omschrijving'}</p>
+                        ${date.link ? `<a href="${date.link}" target="_blank" class="text-pink-500 text-sm underline mt-2 inline-block">Bekijk link 🔗</a>` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        // Functie: Gegevens opslaan
+        async function saveDate() {
+            const title = document.getElementById('title').value;
+            const link = document.getElementById('link').value;
+            const description = document.getElementById('description').value;
+            const btn = document.getElementById('submitBtn');
+
+            if (!title) return alert('Vul een titel in!');
+
+            btn.disabled = true;
+            btn.innerText = 'Bezig met opslaan...';
+
+            const { error } = await supabaseClient
+                .from('DatingDB')
+                .insert([{ title, link, description }]);
+
+            if (error) {
+                alert('Er ging iets mis: ' + error.message);
+            } else {
+                // Formulier leegmaken en lijst verversen
+                document.getElementById('title').value = '';
+                document.getElementById('link').value = '';
+                document.getElementById('description').value = '';
+                fetchDates();
+            }
+            btn.disabled = false;
+            btn.innerText = 'Toevoegen ✨';
+        }
+
+        // Direct laden bij opstarten
+        fetchDates();
+    </script>
+</body>
+</html>
