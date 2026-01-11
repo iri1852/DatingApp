@@ -3,95 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Onze Date Ideeën</title>
+    <title>Onze Date Planner 2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .view { display: none; }
+        .view.active { display: block; }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-indigo-50 min-h-screen font-sans">
 
-    <div class="max-w-2xl mx-auto p-6">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-pink-600">💖 Date Planner</h1>
-            <p class="text-gray-600">Verzamel hier onze leukste uitjes</p>
-        </header>
+    <nav class="bg-white shadow-sm p-4 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 onclick="showView('home')" class="text-2xl font-bold text-indigo-600 cursor-pointer">👩‍❤️‍👨 DateApp</h1>
+            <button onclick="showView('add')" class="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium hover:bg-indigo-700">+ Nieuw</button>
+        </div>
+    </nav>
 
-        <div class="bg-white p-6 rounded-xl shadow-md mb-10">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">Nieuw Idee Toevoegen</h2>
-            <div class="space-y-4">
-                <input type="text" id="title" placeholder="Wat gaan we doen?" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-400 outline-none">
-                <input type="text" id="link" placeholder="Link (bijv. Google Maps of website)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-400 outline-none">
-                <textarea id="description" placeholder="Extra info (wat nemen we mee?)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-400 outline-none"></textarea>
-                <button onclick="saveDate()" id="submitBtn" class="w-full bg-pink-500 text-white font-bold py-3 rounded-lg hover:bg-pink-600 transition">Toevoegen ✨</button>
+    <div class="max-w-4xl mx-auto p-4">
+
+        <section id="homeView" class="view active">
+            <h2 class="text-xl font-semibold mb-6 text-gray-800">Onze Bucketlist</h2>
+            <div id="datesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                </div>
+        </section>
+
+        <section id="formView" class="view">
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 id="formTitle" class="text-2xl font-bold mb-6 text-gray-800">Nieuw idee toevoegen</h2>
+                <input type="hidden" id="editId">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Wat gaan we doen? *</label>
+                        <input type="text" id="title" class="w-full p-3 border rounded-xl mt-1">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Door wie?</label>
+                            <input type="text" id="createdBy" placeholder="Jouw naam" class="w-full p-3 border rounded-xl mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Wanneer? (optioneel)</label>
+                            <input type="date" id="dateSuggested" class="w-full p-3 border rounded-xl mt-1">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Details / Omschrijving</label>
+                        <textarea id="description" rows="3" class="w-full p-3 border rounded-xl mt-1"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Foto uploaden (Sfeer of Herinnering)</label>
+                        <input type="file" id="imageFile" accept="image/*" class="w-full mt-1">
+                    </div> 
+                    <div class="flex gap-3 pt-4">
+                        <button onclick="saveDate()" id="saveBtn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg">Opslaan ✨</button>
+                        <button onclick="showView('home')" class="px-6 py-3 border rounded-xl text-gray-600">Annuleren</button>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <div id="datesContainer" class="space-y-4">
-            <p class="text-center text-gray-400">Ideeën aan het laden...</p>
-        </div>
+        </section>
     </div>
 
     <script>
-        // VERVANG DEZE DOOR JOUW EIGEN GEGEVENS UIT SUPABASE
         const SUPABASE_URL = 'https://jwlysukkajzgxbjymzxt.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3bHlzdWtrYWp6Z3hianltenh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxNTE5NzIsImV4cCI6MjA4MzcyNzk3Mn0.LvNzHeX5nPEE4NCKrERllnVs8jUxre48l8pXmPBTGnM';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Functie: Gegevens ophalen
-        async function fetchDates() {
-            const { data, error } = await supabaseClient
-                .from('DatingDB')
-                .select('*')
-                .order('id', { ascending: false });
-
-            const container = document.getElementById('datesContainer');
-            container.innerHTML = '';
-
-            if (data.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400">Nog geen ideeën. Voeg er een toe!</p>';
-                return;
+        // --- Router ---
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            if(viewName === 'home') {
+                document.getElementById('homeView').classList.add('active');
+                fetchDates();
+            } else if(viewName === 'add') {
+                document.getElementById('formView').classList.add('active');
+                resetForm();
+                document.getElementById('formTitle').innerText = "Nieuw idee toevoegen";
+            } else if(viewName === 'edit') {
+                document.getElementById('formView').classList.add('active');
+                document.getElementById('formTitle').innerText = "Date Aanpassen";
             }
+        }
+
+        function resetForm() {
+            document.getElementById('editId').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('createdBy').value = '';
+            document.getElementById('dateSuggested').value = '';
+            document.getElementById('imageFile').value = '';
+        }
+
+        // --- Data ophalen ---
+        async function fetchDates() {
+            const { data, error } = await supabaseClient.from('DatingDB').select('*').order('id', { ascending: false });
+            const grid = document.getElementById('datesGrid');
+            grid.innerHTML = '';
 
             data.forEach(date => {
-                container.innerHTML += `
-                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-pink-500">
-                        <h3 class="font-bold text-lg text-gray-800">${date.title}</h3>
-                        <p class="text-gray-600 text-sm mt-1">${date.description || 'Geen omschrijving'}</p>
-                        ${date.link ? `<a href="${date.link}" target="_blank" class="text-pink-500 text-sm underline mt-2 inline-block">Bekijk link 🔗</a>` : ''}
+                const img = date.image_url ? date.image_url : 'https://via.placeholder.com/400x200?text=Geen+foto';
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer group">
+                        <img src="${img}" class="h-48 w-full object-cover">
+                        <div class="p-5">
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-lg font-bold text-gray-900">${date.title}</h3>
+                                <span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full">${date.created_by || 'Onbekend'}</span>
+                            </div>
+                            <p class="text-gray-500 text-sm mt-2 line-clamp-2">${date.description || ''}</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs text-gray-400">📅 ${date.date_suggested || 'Nog geen datum'}</span>
+                                <button onclick="editDate(${JSON.stringify(date).replace(/"/g, '&quot;')})" class="text-indigo-600 font-medium text-sm">Aanpassen</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
         }
 
-        // Functie: Gegevens opslaan
+        // --- Uploaden & Opslaan ---
         async function saveDate() {
-            const title = document.getElementById('title').value;
-            const link = document.getElementById('link').value;
-            const description = document.getElementById('description').value;
-            const btn = document.getElementById('submitBtn');
-
-            if (!title) return alert('Vul een titel in!');
-
+            const btn = document.getElementById('saveBtn');
+            const id = document.getElementById('editId').value;
+            const file = document.getElementById('imageFile').files[0];
+            
             btn.disabled = true;
-            btn.innerText = 'Bezig met opslaan...';
+            btn.innerText = "Bezig met verwerken...";
 
-            const { error } = await supabaseClient
-                .from('DatingDB')
-                .insert([{ title, link, description }]);
+            let imageUrl = null;
 
-            if (error) {
-                alert('Er ging iets mis: ' + error.message);
-            } else {
-                // Formulier leegmaken en lijst verversen
-                document.getElementById('title').value = '';
-                document.getElementById('link').value = '';
-                document.getElementById('description').value = '';
-                fetchDates();
+            // Foto uploaden naar Supabase Storage
+            if (file) {
+                const fileName = `${Date.now()}_${file.name}`;
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('date-photos')
+                    .upload(fileName, file);
+                
+                if (uploadData) {
+                    const { data: urlData } = supabaseClient.storage
+                        .from('date-photos')
+                        .getPublicUrl(fileName);
+                    imageUrl = urlData.publicUrl;
+                }
             }
+
+            const payload = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                created_by: document.getElementById('createdBy').value,
+                date_suggested: document.getElementById('dateSuggested').value || null
+            };
+
+            if (imageUrl) payload.image_url = imageUrl;
+
+            let result;
+            if (id) {
+                result = await supabaseClient.from('DatingDB').update(payload).eq('id', id);
+            } else {
+                result = await supabaseClient.from('DatingDB').insert([payload]);
+            }
+
+            if (result.error) alert("Fout: " + result.error.message);
+            else showView('home');
+
             btn.disabled = false;
-            btn.innerText = 'Toevoegen ✨';
+            btn.innerText = "Opslaan ✨";
         }
 
-        // Direct laden bij opstarten
+        function editDate(date) {
+            showView('edit');
+            document.getElementById('editId').value = date.id;
+            document.getElementById('title').value = date.title;
+            document.getElementById('description').value = date.description;
+            document.getElementById('createdBy').value = date.created_by;
+            document.getElementById('dateSuggested').value = date.date_suggested;
+        }
+
         fetchDates();
     </script>
 </body>
