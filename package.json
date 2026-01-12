@@ -1,0 +1,24 @@
+{
+  "name": "dating-app",
+  "version": "2.0.0",
+  "description": "A dating ideas planner app for couples",
+  "main": "script.js",
+  "scripts": {
+    "start": "npx http-server",
+    "dev": "npx http-server -c-1"
+  },
+  "keywords": [
+    "dating",
+    "planner",
+    "couples",
+    "bucketlist"
+  ],
+  "author": "iri1852",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
